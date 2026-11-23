@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Campus Lost and Found portal for reporting, searching, and claiming lost or found items.">
+<title>Lost &amp; Found | Campus Recovery Portal</title>
+<style>
+:root{
+  --ink:#0F0F0F;
+  --canvas:#F6F5F0;
+  --paper:#FFFFFF;
+  --lost:#D62828;
+  --found:#F4C430;
+  --claimed:#15803D;
+  --muted:#4A4A4A;
+  --shadow:5px 5px 0 var(--ink);
+  --shadow-sm:3px 3px 0 var(--ink);
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  font-family:var(--sans);
+  color:var(--ink);
+  line-height:1.5;
+  background-color:var(--canvas);
+  background-image:radial-gradient(#0F0F0F26 1px,transparent 1px);
+  background-size:20px 20px;
+}
+.wrap{max-width:1120px;margin:0 auto;padding:24px 16px 40px}
+h1,h2,h3,p,ul{margin:0}
+ul{padding:0;list-style:none}
+:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+
+/* Masthead */
+.masthead{
+  display:flex;flex-wrap:wrap;gap:20px;align-items:center;
+  background:var(--paper);border:2px solid var(--ink);box-shadow:var(--shadow);
+  padding:20px;margin-bottom:24px;
+}
+.emblem{
+  flex:none;width:68px;height:68px;display:grid;place-items:center;
+  background:var(--ink);color:var(--found);border:2px solid var(--ink);
+  font-family:var(--mono);font-size:1.5rem;font-weight:800;letter-spacing:-.04em;
+}
+.masthead-text{flex:1 1 260px;min-width:0}
+.eyebrow{font-family:var(--mono);font-size:.8rem;letter-spacing:.05em;text-transform:uppercase;color:var(--lost);font-weight:700;margin-bottom:4px}
+h1{font-size:clamp(1.9rem,5vw,3rem);line-height:1.05;letter-spacing:-.02em;font-weight:900}
+.status-strip{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.badge{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:.82rem;font-weight:700;
+  padding:6px 12px;border:2px solid var(--ink);background:var(--paper);
+}
+.badge.version{background:var(--ink);color:var(--paper)}
+.badge.passing{color:var(--claimed);border-color:var(--claimed)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--claimed)}
+
+/* Stats Strip */
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-bottom:24px}
+.stat-card{
+  background:var(--paper);border:2px solid var(--ink);box-shadow:var(--shadow-sm);
+  padding:14px 16px;
+}
+.stat-card.lost{border-top:6px solid var(--lost)}
+.stat-card.found{border-top:6px solid var(--found)}
+.stat-card.claimed{border-top:6px solid var(--claimed)}
+.stat-label{font-family:var(--mono);font-size:.75rem;text-transform:uppercase;font-weight:700;color:var(--muted)}
+.stat-val{font-size:1.8rem;font-weight:900;line-height:1.2}
+
+/* Main Workspace */
+.workspace{display:grid;gap:24px;grid-template-columns:1fr}
+.panel{background:var(--paper);border:2px solid var(--ink);box-shadow:var(--shadow);padding:20px}
+.panel-title{font-size:1.25rem;font-weight:900;padding-bottom:12px;margin-bottom:16px;border-bottom:2px solid var(--ink);text-transform:uppercase;letter-spacing:.02em}
+
+/* Form */
+.field{margin-bottom:14px}
+.field label{display:block;font-family:var(--mono);font-size:.78rem;font-weight:700;text-transform:uppercase;margin-bottom:5px}
+.field input,.field select,.field textarea{
+  width:100%;font:inherit;font-size:.95rem;color:var(--ink);
+  background:var(--canvas);border:2px solid var(--ink);padding:10px 12px;
+}
+.field textarea{min-height:76px;resize:vertical}
+.type-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{
+  font:inherit;font-weight:800;cursor:pointer;color:var(--ink);
+  background:var(--paper);border:2px solid var(--ink);box-shadow:var(--shadow-sm);
+  padding:10px 16px;min-height:44px;transition:transform .1s,box-shadow .1s;
+}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.primary{width:100%;background:var(--ink);color:var(--found);font-family:var(--mono);text-transform:uppercase;letter-spacing:.04em}
+.form-msg{font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--claimed);margin-top:10px;min-height:1.2em}
+
+/* Toolbar & Filters */
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;align-items:center}
+.search-input{
+  flex:1 1 220px;font:inherit;padding:10px 12px;
+  background:var(--canvas);border:2px solid var(--ink);min-height:44px;
+}
+.filter-select{
+  font:inherit;font-family:var(--mono);font-size:.85rem;font-weight:700;
+  padding:10px 12px;background:var(--canvas);border:2px solid var(--ink);min-height:44px;
+}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.tab-btn{
+  font-family:var(--mono);font-size:.8rem;font-weight:800;text-transform:uppercase;
+  padding:7px 14px;background:var(--canvas);color:var(--ink);
+  border:2px solid var(--ink);cursor:pointer;
+}
+.tab-btn[aria-selected="true"]{background:var(--ink);color:var(--paper);box-shadow:2px 2px 0 var(--found)}
+
+/* Item Cards */
+.items-grid{display:grid;gap:16px;grid-template-columns:1fr}
+.item-card{
+  background:var(--canvas);border:2px solid var(--ink);box-shadow:var(--shadow-sm);
+  padding:16px;display:flex;flex-direction:column;gap:10px;
+}
+.item-card.type-lost{border-left:8px solid var(--lost)}
+.item-card.type-found{border-left:8px solid var(--found)}
+.item-card.is-claimed{border-left:8px solid var(--claimed);opacity:.86}
+.item-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px}
+.pill{
+  font-family:var(--mono);font-size:.72rem;font-weight:800;text-transform:uppercase;
+  padding:3px 9px;border:2px solid var(--ink);
+}
+.pill.lost{background:var(--lost);color:var(--paper)}
+.pill.found{background:var(--found);color:var(--ink)}
+.pill.claimed{background:var(--claimed);color:var(--paper)}
+.item-cat{font-family:var(--mono);font-size:.75rem;font-weight:700;color:var(--muted)}
+.item-title{font-size:1.15rem;font-weight:900}
+.item-desc{font-size:.92rem;color:var(--muted)}
+.item-meta{
+  display:flex;flex-wrap:wrap;gap:8px 16px;
+  font-family:var(--mono);font-size:.78rem;padding-top:8px;border-top:1px dashed #999;
+}
+.item-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.mini-btn{
+  font-family:var(--mono);font-size:.75rem;font-weight:800;text-transform:uppercase;
+  padding:6px 12px;border:2px solid var(--ink);background:var(--paper);cursor:pointer;
+}
+.mini-btn:hover{background:var(--found)}
+.mini-btn.danger:hover{background:var(--lost);color:var(--paper)}
+.empty-state{
+  text-align:center;padding:32px 16px;border:2px dashed var(--ink);
+  font-family:var(--mono);font-size:.9rem;color:var(--muted);
+}
+
+/* Footer */
+.site-footer{background:var(--ink);color:var(--paper);border-top:2px solid var(--ink);margin-top:24px}
+.footer-inner{
+  max-width:1120px;margin:0 auto;padding:18px 16px;
+  display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between;align-items:center;
+  font-family:var(--mono);font-size:.8rem;
+}
+#live-clock{color:var(--found);font-weight:700}
+
+@media (min-width:640px){
+  .stats{grid-template-columns:repeat(4,1fr)}
+}
+@media (min-width:860px){
+  .workspace{grid-template-columns:360px 1fr;align-items:start}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="masthead">
+  <div class="emblem" aria-hidden="true">L&amp;F</div>
+  <div class="masthead-text">
+    <p class="eyebrow">Campus Item Recovery Portal</p>
+    <h1>Lost &amp; Found</h1>
+  </div>
+  <div class="status-strip">
+    <!-- LIVE DEMO: bump v1.0.0 to v1.1.0 and push to GitHub to trigger automated CI/CD deploy -->
+    <span class="badge version" id="app-version">v1.0.0</span>
+    <span class="badge passing" id="pipeline-status"><span class="dot" aria-hidden="true"></span>Portal Online</span>
+  </div>
+</header>
+
+<main>
+  <section class="stats" aria-label="Recovery Statistics">
+    <div class="stat-card">
+      <div class="stat-label">Total Reports</div>
+      <div class="stat-val" id="stat-total">0</div>
+    </div>
+    <div class="stat-card lost">
+      <div class="stat-label">Lost Items</div>
+      <div class="stat-val" id="stat-lost">0</div>
+    </div>
+    <div class="stat-card found">
+      <div class="stat-label">Found Items</div>
+      <div class="stat-val" id="stat-found">0</div>
+    </div>
+    <div class="stat-card claimed">
+      <div class="stat-label">Claimed / Returned</div>
+      <div class="stat-val" id="stat-claimed">0</div>
+    </div>
+  </section>
+
+  <div class="workspace">
+    <section class="panel" aria-label="Report an Item">
+      <h2 class="panel-title">Report an Item</h2>
+      <form id="report-form">
+        <div class="field type-row">
+          <div>
+            <label for="item-type">Report Type</label>
+            <select id="item-type" required>
+              <option value="lost">Lost Item</option>
+              <option value="found">Found Item</option>
+            </select>
+          </div>
+          <div>
+            <label for="item-category">Category</label>
+            <select id="item-category" required>
+              <option value="Electronics">Electronics</option>
+              <option value="ID & Keys">ID &amp; Keys</option>
+              <option value="Books & Notes">Books &amp; Notes</option>
+              <option value="Accessories">Accessories</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="field">
+          <label for="item-title">Item Name</label>
+          <input id="item-title" type="text" placeholder="e.g. Casio FX-991EX Calculator" required maxlength="80">
+        </div>
+        <div class="field">
+          <label for="item-location">Campus Location</label>
+          <input id="item-location" type="text" placeholder="e.g. CS Lab 3 / Central Library" required maxlength="80">
+        </div>
+        <div class="field">
+          <label for="item-contact">Contact / Desk Info</label>
+          <input id="item-contact" type="text" placeholder="e.g. Room 204 or 98XXXX1234" required maxlength="60">
+        </div>
+        <div class="field">
+          <label for="item-desc">Identifying Details</label>
+          <textarea id="item-desc" placeholder="Color, sticker, cover, or marks to verify ownership..." required maxlength="240"></textarea>
+        </div>
+        <button class="btn primary" id="submit-btn" type="submit">Publish Report</button>
+        <p class="form-msg" id="form-msg" aria-live="polite"></p>
+      </form>
+    </section>
+
+    <section class="panel" aria-label="Live Lost and Found Board">
+      <h2 class="panel-title">Live Campus Board</h2>
+
+      <div class="toolbar">
+        <input class="search-input" id="search-input" type="search" placeholder="Search by item, location, or details..." aria-label="Search items">
+        <select class="filter-select" id="category-filter" aria-label="Filter by category">
+          <option value="all">All Categories</option>
+          <option value="Electronics">Electronics</option>
+          <option value="ID & Keys">ID &amp; Keys</option>
+          <option value="Books & Notes">Books &amp; Notes</option>
+          <option value="Accessories">Accessories</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div class="tabs" id="filter-tabs" role="tablist" aria-label="Filter reports by status">
+        <button type="button" class="tab-btn" role="tab" data-filter="all" aria-selected="true">All</button>
+        <button type="button" class="tab-btn" role="tab" data-filter="lost" aria-selected="false">Lost</button>
+        <button type="button" class="tab-btn" role="tab" data-filter="found" aria-selected="false">Found</button>
+        <button type="button" class="tab-btn" role="tab" data-filter="claimed" aria-selected="false">Claimed</button>
+      </div>
+
+      <div class="items-grid" id="items-list" aria-live="polite"></div>
+    </section>
+  </div>
+</main>
+
+</div>
+
+<footer class="site-footer">
+  <div class="footer-inner">
+    <span>Lost &amp; Found Portal | Automated CI/CD via GitHub Actions | Zero-Dependency Static App</span>
+    <span id="live-clock">--:--:--</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  var STORAGE_KEY = 'campus_lost_found_items_v1';
+
+  var SEED_ITEMS = [
+    {
+      id: 'LF-101',
+      type: 'found',
+      category: 'Electronics',
+      title: 'Casio FX-991EX Scientific Calculator',
+      location: 'CS Lab 2, Second Floor',
+      contact: 'Submitted at CS Dept Office',
+      desc: 'Black slide cover with a small yellow star sticker on the back.',
+      date: 'Today, 10:15 AM',
+      claimed: false
+    },
+    {
+      id: 'LF-102',
+      type: 'lost',
+      category: 'ID & Keys',
+      title: 'Student ID Card & Hostel Key',
+      location: 'Central Library Reading Hall',
+      contact: 'Contact Help Desk (Block A)',
+      desc: 'Blue lanyard with engineering student ID card and one brass padlock key.',
+      date: 'Today, 09:40 AM',
+      claimed: false
+    },
+    {
+      id: 'LF-103',
+      type: 'found',
+      category: 'Books & Notes',
+      title: 'Java DSA Handwritten Spiral Notebook',
+      location: 'Seminar Hall B',
+      contact: 'Security Desk, Main Gate',
+      desc: 'Classmate A4 spiral notebook containing Trees and Graphs notes.',
+      date: 'Yesterday, 04:30 PM',
+      claimed: false
+    },
+    {
+      id: 'LF-104',
+      type: 'lost',
+      category: 'Accessories',
+      title: 'Matte Black Insulated Water Bottle',
+      location: 'College Canteen',
+      contact: 'Canteen Counter',
+      desc: '750 ml stainless steel bottle with minor dent near the bottom.',
+      date: 'Yesterday, 01:20 PM',
+      claimed: true
+    }
+  ];
+
+  function loadItems() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length > 0) { return parsed; }
+      }
+    } catch (e) { /* ignore storage errors */ }
+    return SEED_ITEMS.slice();
+  }
+
+  function saveItems(items) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) { /* ignore */ }
+  }
+
+  var items = loadItems();
+  var activeFilter = 'all';
+
+  var listEl = document.getElementById('items-list');
+  var searchEl = document.getElementById('search-input');
+  var catEl = document.getElementById('category-filter');
+  var tabBtns = Array.prototype.slice.call(document.querySelectorAll('#filter-tabs .tab-btn'));
+
+  function updateStats() {
+    var total = items.length;
+    var lost = items.filter(function (x) { return x.type === 'lost' && !x.claimed; }).length;
+    var found = items.filter(function (x) { return x.type === 'found' && !x.claimed; }).length;
+    var claimed = items.filter(function (x) { return x.claimed; }).length;
+    document.getElementById('stat-total').textContent = String(total);
+    document.getElementById('stat-lost').textContent = String(lost);
+    document.getElementById('stat-found').textContent = String(found);
+    document.getElementById('stat-claimed').textContent = String(claimed);
+  }
+
+  function createEl(tag, className, text) {
+    var el = document.createElement(tag);
+    if (className) { el.className = className; }
+    if (text !== undefined) { el.textContent = text; }
+    return el;
+  }
+
+  function render() {
+    updateStats();
+    var q = searchEl.value.trim().toLowerCase();
+    var cat = catEl.value;
+
+    var filtered = items.filter(function (item) {
+      if (activeFilter === 'lost' && (item.type !== 'lost' || item.claimed)) { return false; }
+      if (activeFilter === 'found' && (item.type !== 'found' || item.claimed)) { return false; }
+      if (activeFilter === 'claimed' && !item.claimed) { return false; }
+      if (cat !== 'all' && item.category !== cat) { return false; }
+      if (q) {
+        var hay = (item.title + ' ' + item.location + ' ' + item.desc + ' ' + item.category + ' ' + item.id).toLowerCase();
+        if (hay.indexOf(q) === -1) { return false; }
+      }
+      return true;
+    });
+
+    listEl.textContent = '';
+
+    if (filtered.length === 0) {
+      listEl.appendChild(createEl('div', 'empty-state', 'No matching items found. Try changing filters or publish a new report.'));
+      return;
+    }
+
+    filtered.forEach(function (item) {
+      var cardClass = 'item-card type-' + item.type + (item.claimed ? ' is-claimed' : '');
+      var card = createEl('article', cardClass);
+
+      var top = createEl('div', 'item-top');
+      var statusText = item.claimed ? 'CLAIMED' : item.type.toUpperCase();
+      var pillClass = 'pill ' + (item.claimed ? 'claimed' : item.type);
+      top.appendChild(createEl('span', pillClass, statusText + ' • ' + item.id));
+      top.appendChild(createEl('span', 'item-cat', item.category + ' | ' + item.date));
+
+      var title = createEl('h3', 'item-title', item.title);
+      var desc = createEl('p', 'item-desc', item.desc);
+
+      var meta = createEl('div', 'item-meta');
+      meta.appendChild(createEl('span', '', 'Location: ' + item.location));
+      meta.appendChild(createEl('span', '', 'Contact: ' + item.contact));
+
+      var actions = createEl('div', 'item-actions');
+      var toggleBtn = createEl('button', 'mini-btn', item.claimed ? 'Reopen Report' : 'Mark as Claimed');
+      toggleBtn.type = 'button';
+      toggleBtn.addEventListener('click', function () {
+        item.claimed = !item.claimed;
+        saveItems(items);
+        render();
+      });
+
+      var delBtn = createEl('button', 'mini-btn danger', 'Remove');
+      delBtn.type = 'button';
+      delBtn.addEventListener('click', function () {
+        items = items.filter(function (x) { return x.id !== item.id; });
+        saveItems(items);
+        render();
+      });
+
+      actions.appendChild(toggleBtn);
+      actions.appendChild(delBtn);
+
+      card.appendChild(top);
+      card.appendChild(title);
+      card.appendChild(desc);
+      card.appendChild(meta);
+      card.appendChild(actions);
+      listEl.appendChild(card);
+    });
+  }
+
+  document.getElementById('report-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var newItem = {
+      id: 'LF-' + String(Math.floor(200 + Math.random() * 799)),
+      type: document.getElementById('item-type').value,
+      category: document.getElementById('item-category').value,
+      title: document.getElementById('item-title').value.trim(),
+      location: document.getElementById('item-location').value.trim(),
+      contact: document.getElementById('item-contact').value.trim(),
+      desc: document.getElementById('item-desc').value.trim(),
+      date: 'Just now',
+      claimed: false
+    };
+    items.unshift(newItem);
+    saveItems(items);
+    e.target.reset();
+    document.getElementById('form-msg').textContent = 'Published ' + newItem.id + ' to live board.';
+    render();
+  });
+
+  tabBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      activeFilter = btn.getAttribute('data-filter');
+      tabBtns.forEach(function (b) {
+        b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+      });
+      render();
+    });
+  });
+
+  searchEl.addEventListener('input', render);
+  catEl.addEventListener('change', render);
+
+  function tick() {
+    document.getElementById('live-clock').textContent = new Date().toLocaleString();
+  }
+  tick();
+  setInterval(tick, 1000);
+
+  render();
+})();
+</script>
+</body>
+</html>
